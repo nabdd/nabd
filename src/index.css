@@ -1,0 +1,131 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/geist';
+@import '@fontsource-variable/geist-mono';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Semantic tokens. One palette, one accent (Nabd red). Swapped under .dark. */
+:root {
+  --bg: #fbf9f7;
+  --surface: #ffffff;
+  --surface-2: #f3f1ee;
+  --ink: #1b1b1f;
+  --ink-2: #4a4a52;
+  --ink-3: #6b6b76;
+  --line: #e6e3e0;
+  --red: #c8102e;
+  --red-dark: #9e0b23;
+  --red-hover: #a90d26;
+  --red-soft: #fdecef;
+  --red-tint: #fbd5db;
+  --green: #17855a;
+  --green-soft: #e3f6ec;
+  --amber: #a86a00;
+  --amber-soft: #fff3dc;
+  --blue: #2563eb;
+  --blue-soft: #e8efff;
+  --side: #1b1b1f;
+  --wa: #25d366;
+  --wa-dark: #128c7e;
+  --shadow-tint: 27 27 31;
+}
+.dark {
+  --bg: #121214;
+  --surface: #1b1b1f;
+  --surface-2: #26262b;
+  --ink: #f2f0ed;
+  --ink-2: #b9b7b3;
+  --ink-3: #8f8d99;
+  --line: #2f2f35;
+  --red: #d62a46;
+  --red-dark: #ff8fa0;
+  --red-hover: #bf2039;
+  --red-soft: #3a1620;
+  --red-tint: #5a1f2d;
+  --green: #3ccf91;
+  --green-soft: #12392a;
+  --amber: #f0b445;
+  --amber-soft: #3b2c0c;
+  --blue: #7aa2ff;
+  --blue-soft: #1a2747;
+  --side: #0c0c0e;
+  --shadow-tint: 0 0 0;
+}
+
+@theme inline {
+  --font-sans: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Geist Mono Variable', ui-monospace, monospace;
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-line: var(--line);
+  --color-brand: var(--red);
+  --color-brand-dark: var(--red-dark);
+  --color-brand-dark-solid: var(--red-hover);
+  --color-brand-soft: var(--red-soft);
+  --color-brand-tint: var(--red-tint);
+  --color-ok: var(--green);
+  --color-ok-soft: var(--green-soft);
+  --color-warn: var(--amber);
+  --color-warn-soft: var(--amber-soft);
+  --color-info: var(--blue);
+  --color-info-soft: var(--blue-soft);
+  --color-side: var(--side);
+  --color-wa: var(--wa);
+  --color-wa-dark: var(--wa-dark);
+  /* Shape system: controls 12px, cards 16px, pills full. */
+  --radius-control: 12px;
+  --radius-card: 16px;
+  --shadow-soft: 0 10px 30px rgb(var(--shadow-tint) / 0.08);
+  --shadow-lift: 0 24px 60px rgb(var(--shadow-tint) / 0.16);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+::selection { background: var(--red); color: #fff; }
+:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+
+@keyframes ripple {
+  0% { transform: scale(0.35); opacity: 0.55; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+@keyframes shimmer {
+  100% { transform: translateX(100%); }
+}
+@keyframes marquee {
+  to { transform: translateX(-50%); }
+}
+@keyframes drip {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(6px) scale(1.04, 0.97); }
+}
+.skeleton { position: relative; overflow: hidden; background: var(--surface-2); border-radius: 8px; }
+.skeleton::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.35), transparent);
+  transform: translateX(-100%); animation: shimmer 1.4s infinite;
+}
+.grain::before {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 60; opacity: 0.035;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
