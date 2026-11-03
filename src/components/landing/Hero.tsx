@@ -1,4 +1,4 @@
-import { Component, lazy, Suspense, useEffect, useRef, useState, type ReactNode, type RefObject } from 'react'
+import { Component, lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
 import {
   AnimatePresence,
   motion,
@@ -77,25 +77,23 @@ function FlipCard({ n, className }: { n: number; className?: string }) {
   )
 }
 
-function HeroStage({
-  px,
-  py,
-  sectionRef,
-  scrollRef,
-  active,
-}: {
-  px: MotionValue<number>
-  py: MotionValue<number>
-  sectionRef: RefObject<HTMLElement | null>
-  scrollRef: RefObject<number>
-  active: boolean
-}) {
+function HeroStage({ px, py, showFallback }: { px: MotionValue<number>; py: MotionValue<number>; showFallback: boolean }) {
   const reduce = useReducedMotion()
   const [start, setStart] = useState(0)
+  const [startB, setStartB] = useState(2)
+  // The two cards flip half a cycle apart so one is always readable.
   useEffect(() => {
     if (reduce) return
-    const id = setInterval(() => setStart((s) => s + 1), 4200)
-    return () => clearInterval(id)
+    const a = setInterval(() => setStart((s) => s + 1), 4200)
+    let b: ReturnType<typeof setInterval> | undefined
+    const delay = setTimeout(() => {
+      b = setInterval(() => setStartB((s) => s + 1), 4200)
+    }, 2100)
+    return () => {
+      clearInterval(a)
+      clearTimeout(delay)
+      if (b) clearInterval(b)
+    }
   }, [reduce])
 
   // Depth layers: nearer cards travel further and tilt toward the pointer.
@@ -109,19 +107,11 @@ function HeroStage({
   return (
     <div className="relative h-[440px] sm:h-[600px]">
       {/* Static fallback, visible until WebGL has drawn its first frame */}
-      <div aria-hidden className="absolute left-1/2 top-1/2 size-[420px] -translate-x-1/2 -translate-y-1/2">
+      <div aria-hidden className={`absolute left-1/2 top-1/2 size-[420px] -translate-x-1/2 -translate-y-1/2 transition-opacity duration-700 ${showFallback ? "opacity-100" : "opacity-0"}`}>
         <Ripples count={4} duration={6} />
         <div className="absolute inset-[34%] flex items-center justify-center rounded-full bg-brand/15 text-brand">
           <Drop weight="fill" className="size-16 opacity-50" />
         </div>
-      </div>
-
-      <div aria-hidden className="absolute inset-x-[-8%] inset-y-0 lg:inset-x-[-2%]">
-        <SceneBoundary>
-          <Suspense fallback={null}>
-            <DropScene eventSource={sectionRef} scrollRef={scrollRef as React.MutableRefObject<number>} animate={!reduce} active={active} cells={window.innerWidth < 640 ? 14 : 26} />
-          </Suspense>
-        </SceneBoundary>
       </div>
 
       <motion.div style={{ x: ax, y: ay, rotateY: aRy, transformPerspective: 900 }} className="absolute right-0 top-2 hidden w-[350px] sm:block">
@@ -132,7 +122,7 @@ function HeroStage({
 
       <motion.div style={{ x: bx, y: by, rotateY: bRy, transformPerspective: 900 }} className="absolute bottom-0 left-0 w-[min(100%,350px)] sm:bottom-4 sm:left-2">
         <motion.div animate={reduce ? undefined : { y: [0, 8, 0] }} transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut', delay: 1 }}>
-          <FlipCard n={start + 2} />
+          <FlipCard n={startB} />
         </motion.div>
       </motion.div>
     </div>
@@ -144,6 +134,7 @@ export function Hero() {
   const reduce = useReducedMotion()
   const active = useInView(ref, { margin: '100px' })
   const scrollRef = useRef(0)
+  const [ready, setReady] = useState(false)
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end start'] })
   const { scrollY: pageY } = useScroll()
   useMotionValueEvent(pageY, 'change', (v) => {
@@ -166,6 +157,14 @@ export function Hero() {
       }}
       className="relative isolate flex min-h-[100dvh] items-center overflow-hidden pb-16 pt-24"
     >
+      {/* Full-bleed canvas: the scene is never boxed in, so nothing clips mid-page. Soft fade at the bottom edge. */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 [mask-image:linear-gradient(to_bottom,black_82%,transparent)]">
+        <SceneBoundary>
+          <Suspense fallback={null}>
+            <DropScene eventSource={ref} scrollRef={scrollRef} animate={!reduce} active={active} cells={window.innerWidth < 640 ? 14 : 28} onReady={() => setReady(true)} />
+          </Suspense>
+        </SceneBoundary>
+      </div>
       <motion.div aria-hidden style={{ y: yBlob }} className="absolute -left-40 -top-40 -z-10 size-[620px] rounded-full bg-brand/15 blur-[120px]" />
       <motion.div aria-hidden style={{ y: yBlob2 }} className="absolute -right-32 top-1/3 -z-10 size-[620px] rounded-full bg-brand/15 blur-[110px]" />
 
@@ -217,7 +216,7 @@ export function Hero() {
               </LinkButton>
             </Magnetic>
             <Magnetic>
-              <LinkButton to="/login" variant="ghost" size="lg">
+              <LinkButton to="/login" variant="ghost" size="lg" className="bg-surface/80 backdrop-blur">
                 Post a request
               </LinkButton>
             </Magnetic>
@@ -225,7 +224,7 @@ export function Hero() {
         </div>
 
         <motion.div initial={reduce ? false : { opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 1.2, delay: 0.4, ease: EASE }}>
-          <HeroStage px={px} py={py} sectionRef={ref} scrollRef={scrollRef} active={active} />
+          <HeroStage px={px} py={py} showFallback={!ready} />
         </motion.div>
       </div>
     </section>
