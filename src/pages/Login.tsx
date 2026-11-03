@@ -31,7 +31,7 @@ export default function Login() {
         <div aria-hidden className="absolute -bottom-40 -left-40 -z-10 size-[620px] [&_span]:border-white/30">
           <Ripples count={4} duration={7} />
         </div>
-        <Logo light />
+        <Logo mono />
         <div>
           <h1 className="max-w-[14ch] text-5xl font-extrabold leading-[1.05] tracking-tighter">Stop calling donors one by one.</h1>
           <p className="mt-5 max-w-[44ch] text-[17px] leading-relaxed text-white/90">

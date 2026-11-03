@@ -3,6 +3,9 @@ import { Link, type LinkProps } from 'react-router-dom'
 import { Drop } from '@phosphor-icons/react'
 import { cn } from '@/lib/cn'
 import { fmtType } from '@/lib/blood'
+import logoLight from '@/assets/logo-light.png'
+import logoDark from '@/assets/logo-dark.png'
+import logoMono from '@/assets/logo-mono.png'
 
 /* ---------- Button ---------- */
 type Variant = 'primary' | 'ghost' | 'light' | 'wa' | 'dark'
@@ -126,16 +129,26 @@ export function Avatar({ name, className }: { name: string; className?: string }
 }
 
 /* ---------- Logo ---------- */
-export function Logo({ className, light, to = '/' }: { className?: string; light?: boolean; to?: string }) {
+/**
+ * Brand logo. Variants come from design/logo-source.jpg (see scripts/make-logos.mjs):
+ * - default follows the page theme (dark letters in light mode, pale letters in dark mode)
+ * - `light`: for fixed dark surfaces such as the dashboard sidebar
+ * - `mono`: all white, for the red brand panel
+ */
+export function Logo({ className, light, mono, to = '/' }: { className?: string; light?: boolean; mono?: boolean; to?: string }) {
+  const img = 'h-9 w-auto select-none'
   return (
-    <Link
-      to={to}
-      className={cn('inline-flex items-center gap-2.5 text-xl font-extrabold tracking-tight', light ? 'text-white' : 'text-ink', className)}
-    >
-      <span className={cn('flex size-[34px] items-center justify-center rounded-[10px]', light ? 'bg-white/20' : 'bg-brand')}>
-        <Drop weight="fill" className="size-[18px] text-white" />
-      </span>
-      Nabd
+    <Link to={to} aria-label="Nabd home" className={cn('inline-flex items-center', className)}>
+      {mono ? (
+        <img src={logoMono} alt="Nabd" className={img} />
+      ) : light ? (
+        <img src={logoDark} alt="Nabd" className={img} />
+      ) : (
+        <>
+          <img src={logoLight} alt="Nabd" className={cn(img, 'dark:hidden')} />
+          <img src={logoDark} alt="Nabd" className={cn(img, 'hidden dark:block')} />
+        </>
+      )}
     </Link>
   )
 }

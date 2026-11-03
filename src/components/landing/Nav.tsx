@@ -45,9 +45,9 @@ export function Nav() {
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-6 px-5 lg:px-8">
         <Logo />
-        <nav className="hidden items-center gap-7 text-sm font-medium text-ink-2 lg:flex" aria-label="Primary">
+        <nav className="hidden items-center gap-6 whitespace-nowrap text-sm font-medium text-ink-2 lg:flex xl:gap-7" aria-label="Primary">
           {links.map((l) => (
-            <a key={l.href} href={l.href} className="relative py-1 transition-colors hover:text-ink after:absolute after:inset-x-0 after:-bottom-0.5 after:h-px after:origin-left after:scale-x-0 after:bg-brand after:transition-transform hover:after:scale-x-100">
+            <a key={l.href} href={l.href} className={cn(l.href === '#match' && 'hidden xl:inline', 'relative py-1 transition-colors hover:text-ink after:absolute after:inset-x-0 after:-bottom-0.5 after:h-px after:origin-left after:scale-x-0 after:bg-brand after:transition-transform hover:after:scale-x-100')}>
               {l.label}
             </a>
           ))}
