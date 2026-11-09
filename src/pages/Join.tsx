@@ -7,6 +7,7 @@ import { ThemeToggle } from '@/components/landing/Nav'
 import { BLOOD_TYPES, fmtType } from '@/lib/blood'
 import { cities } from '@/data/mock'
 import { cn } from '@/lib/cn'
+import { api, type ApiError } from '@/lib/api'
 import { EASE } from '@/components/motion'
 
 type Errors = Partial<Record<'name' | 'age' | 'phone' | 'type' | 'consent', string>>
@@ -23,6 +24,7 @@ export default function Join() {
   const [consent, setConsent] = useState(false)
   const [errors, setErrors] = useState<Errors>({})
   const [busy, setBusy] = useState(false)
+  const [formError, setFormError] = useState('')
 
   function validate(): Errors {
     const e: Errors = {}
@@ -35,7 +37,7 @@ export default function Join() {
     return e
   }
 
-  function submit(ev: FormEvent) {
+  async function submit(ev: FormEvent) {
     ev.preventDefault()
     const e = validate()
     setErrors(e)
@@ -44,7 +46,23 @@ export default function Join() {
       return
     }
     setBusy(true)
-    setTimeout(() => nav('/join/success', { state: { name: name.trim(), age, type, city, smoke, before } }), 900)
+    setFormError('')
+    try {
+      await api('/donors', {
+        method: 'POST',
+        auth: false,
+        body: { name: name.trim(), age: Number(age), phone, bloodType: type, city, smoker: smoke === 'yes', donatedBefore: before === 'yes', consent },
+      })
+      nav('/join/success', { state: { name: name.trim(), age, type, city, smoke, before } })
+    } catch (err) {
+      const apiErr = err as ApiError
+      // Show server-side validation next to the field it belongs to, anything else as a general message.
+      const f = apiErr.fields ?? {}
+      const mapped: Errors = { name: f.name, age: f.age, phone: f.phone, type: f.bloodType, consent: f.consent }
+      if (Object.values(mapped).some(Boolean)) setErrors(mapped)
+      else setFormError(apiErr.message)
+      setBusy(false)
+    }
   }
 
   return (
@@ -153,6 +171,7 @@ export default function Join() {
               {errors.consent && <p role="alert" className="mt-2 text-[13px] font-medium text-brand-dark">{errors.consent}</p>}
             </div>
 
+            {formError && <p role="alert" className="rounded-control bg-brand-soft px-3.5 py-3 text-sm font-medium text-brand-dark">{formError}</p>}
             <Button type="submit" size="lg" block disabled={busy}>
               {busy ? <><SpinnerGap className="size-5 animate-spin" /> Joining...</> : 'Join the donor list'}
             </Button>

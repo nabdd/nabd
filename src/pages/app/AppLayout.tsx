@@ -1,15 +1,18 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
-import { CalendarBlank, ChartBar, CheckCircle, GearSix, ListBullets, Moon, Sun, UsersThree, X, ChatTeardropText } from '@phosphor-icons/react'
+import { CalendarBlank, ChartBar, ChatTeardropText, CheckCircle, GearSix, ListBullets, Moon, SignOut, Sun, UsersThree, WarningCircle, X } from '@phosphor-icons/react'
 import { Avatar, Logo } from '@/components/ui'
 import { cn } from '@/lib/cn'
+import { useAuth } from '@/lib/auth'
+import { useApi } from '@/lib/api'
+import type { Dashboard } from '@/lib/types'
 import { useTheme } from '@/lib/theme'
 import { EASE } from '@/components/motion'
 
 /* ---------- Toasts (transient feedback only) ---------- */
-type Toast = { id: number; text: string }
-const ToastCtx = createContext<(text: string) => void>(() => {})
+type Toast = { id: number; text: string; error?: boolean }
+const ToastCtx = createContext<(text: string, error?: boolean) => void>(() => {})
 export const useToast = () => useContext(ToastCtx)
 
 /* ---------- Page header slot ---------- */
@@ -27,7 +30,7 @@ export function PageHeader({ title, sub, crumb, children }: { title: ReactNode; 
 }
 
 const nav = [
-  { to: '/app', end: true, label: 'Requests', icon: ListBullets, badge: 3 },
+  { to: '/app', end: true, label: 'Requests', icon: ListBullets, badge: true },
   { to: '/app/donors', label: 'Donors', icon: UsersThree },
   { to: '/app/drives', label: 'Blood drives', icon: CalendarBlank },
   { to: '/app/templates', label: 'Message templates', icon: ChatTeardropText },
@@ -38,7 +41,10 @@ export default function AppLayout() {
   const [open, setOpen] = useState(false)
   const [toasts, setToasts] = useState<Toast[]>([])
   const { dark, toggle } = useTheme()
+  const { hospital, logout } = useAuth()
   const loc = useLocation()
+  // Open-request count for the sidebar badge. Refreshes when you move between pages.
+  const { data: stats } = useApi<Dashboard>(`/stats/dashboard?p=${loc.pathname}`)
 
   useEffect(() => {
     setOpen(false)
@@ -47,16 +53,16 @@ export default function AppLayout() {
     document.title = 'Nabd | Blood bank dashboard'
   }, [])
 
-  const push = useCallback((text: string) => {
+  const push = useCallback((text: string, error?: boolean) => {
     const id = Date.now() + Math.random()
-    setToasts((t) => [...t, { id, text }])
-    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 3200)
+    setToasts((t) => [...t, { id, text, error }])
+    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 3600)
   }, [])
 
   const Sidebar = (
     <div className="flex h-full w-[260px] flex-col gap-1.5 bg-side px-5 py-7 text-white">
       <div className="mb-7 flex items-center justify-between px-2">
-        <Logo light />
+        <Logo light to="/app" />
         <button className="lg:hidden" onClick={() => setOpen(false)} aria-label="Close menu"><X className="size-5" /></button>
       </div>
       {nav.map((n) => (
@@ -70,7 +76,7 @@ export default function AppLayout() {
         >
           <n.icon className="size-[18px]" weight="duotone" />
           {n.label}
-          {n.badge && <span className="ml-auto rounded-full bg-brand px-2 py-0.5 text-[11px] font-bold text-white">{n.badge}</span>}
+          {n.badge && !!stats?.openRequests && <span className="ml-auto rounded-full bg-brand px-2 py-0.5 text-[11px] font-bold text-white">{stats.openRequests}</span>}
         </NavLink>
       ))}
       <div className="flex-1" />
@@ -81,11 +87,14 @@ export default function AppLayout() {
         {dark ? <Sun className="size-[18px]" /> : <Moon className="size-[18px]" />} {dark ? 'Light mode' : 'Dark mode'}
       </button>
       <div className="mt-2 flex items-center gap-3 border-t border-white/10 px-2 pt-4">
-        <Avatar name="AU" />
-        <div>
-          <div className="text-[13px] font-semibold">AUBMC Blood Bank</div>
-          <div className="text-[11px] text-[#b8b6b2]">Beirut</div>
+        <Avatar name={hospital?.name ?? 'N'} />
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-[13px] font-semibold">{hospital?.name}</div>
+          <div className="text-[11px] text-[#b8b6b2]">{hospital?.city}</div>
         </div>
+        <button onClick={logout} aria-label="Sign out" title="Sign out" className="flex size-8 items-center justify-center rounded-lg text-[#b8b6b2] hover:bg-white/10 hover:text-white">
+          <SignOut className="size-[18px]" />
+        </button>
       </div>
     </div>
   )
@@ -127,7 +136,7 @@ export default function AppLayout() {
                 transition={{ type: 'spring', stiffness: 300, damping: 24 }}
                 className="pointer-events-auto flex items-center gap-2.5 rounded-control bg-ink px-4 py-3 text-sm font-semibold text-bg shadow-lift"
               >
-                <CheckCircle weight="fill" className="size-5 text-ok" /> {t.text}
+                {t.error ? <WarningCircle weight="fill" className="size-5 text-brand" /> : <CheckCircle weight="fill" className="size-5 text-ok" />} {t.text}
               </motion.div>
             ))}
           </AnimatePresence>

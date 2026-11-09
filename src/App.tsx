@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect } from 'react'
 import { Route, Routes, useLocation } from 'react-router-dom'
 import Landing from '@/pages/Landing'
 import DonorProfile from '@/pages/DonorProfile'
+import { RequireAuth } from '@/lib/auth'
 
 const Join = lazy(() => import('@/pages/Join'))
 const JoinSuccess = lazy(() => import('@/pages/JoinSuccess'))
@@ -42,7 +43,7 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/donor" element={<DonorProfile />} />
           <Route path="/whatsapp" element={<WhatsAppDemo />} />
-          <Route path="/app" element={<AppLayout />}>
+          <Route path="/app" element={<RequireAuth><AppLayout /></RequireAuth>}>
             <Route index element={<Requests />} />
             <Route path="requests/new" element={<NewRequest />} />
             <Route path="requests/:id" element={<RequestTracking />} />

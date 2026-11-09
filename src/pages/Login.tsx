@@ -1,28 +1,40 @@
 import { useState, type FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { motion } from 'motion/react'
 import { Eye, EyeSlash, SpinnerGap } from '@phosphor-icons/react'
 import { Button, Checkbox, Field, Input, Logo } from '@/components/ui'
 import { Ripples, EASE } from '@/components/motion'
+import { ApiError } from '@/lib/api'
+import { useAuth } from '@/lib/auth'
 
 export default function Login() {
   const nav = useNavigate()
-  const [email, setEmail] = useState('bloodbank@aubmc.org.lb')
+  const from = (useLocation().state as { from?: string } | null)?.from ?? '/app'
+  const { hospital, login } = useAuth()
+  const [email, setEmail] = useState(import.meta.env.DEV ? 'bloodbank@aubmc.org.lb' : '')
   const [pw, setPw] = useState('')
   const [show, setShow] = useState(false)
   const [keep, setKeep] = useState(true)
-  const [err, setErr] = useState<{ email?: string; pw?: string }>({})
+  const [err, setErr] = useState<{ email?: string; pw?: string; form?: string }>({})
   const [busy, setBusy] = useState(false)
 
-  function submit(e: FormEvent) {
+  if (hospital) return <Navigate to="/app" replace />
+
+  async function submit(e: FormEvent) {
     e.preventDefault()
     const next: typeof err = {}
     if (!/^\S+@\S+\.\S+$/.test(email)) next.email = 'Enter your work email.'
-    if (pw.length < 4) next.pw = 'Enter your password.'
+    if (!pw) next.pw = 'Enter your password.'
     setErr(next)
     if (Object.keys(next).length) return
     setBusy(true)
-    setTimeout(() => nav('/app'), 800)
+    try {
+      await login(email.trim(), pw)
+      nav(from, { replace: true })
+    } catch (e) {
+      setErr({ form: e instanceof ApiError ? e.message : 'Could not sign in. Try again.' })
+      setBusy(false)
+    }
   }
 
   return (
@@ -55,12 +67,13 @@ export default function Login() {
             <h2 className="text-3xl font-extrabold tracking-tight">Hospital sign in</h2>
             <p className="mt-1.5 text-ink-2">Use the account assigned to your blood bank.</p>
           </div>
+          {err.form && <p role="alert" className="rounded-control bg-brand-soft px-3.5 py-3 text-sm font-medium text-brand-dark">{err.form}</p>}
           <Field label="Work email" htmlFor="email" error={err.email}>
             <Input id="email" type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} aria-invalid={!!err.email} />
           </Field>
-          <Field label="Password" htmlFor="pw" error={err.pw}>
+          <Field label="Password" htmlFor="pw" error={err.pw} hint={import.meta.env.DEV ? 'Demo password: nabd-demo-2026 (development only)' : undefined}>
             <div className="relative">
-              <Input id="pw" type={show ? 'text' : 'password'} autoComplete="current-password" value={pw} onChange={(e) => setPw(e.target.value)} aria-invalid={!!err.pw} className="pr-12" placeholder="Any 4+ characters for this demo" />
+              <Input id="pw" type={show ? 'text' : 'password'} autoComplete="current-password" value={pw} onChange={(e) => setPw(e.target.value)} aria-invalid={!!err.pw} className="pr-12" />
               <button type="button" onClick={() => setShow((s) => !s)} aria-label={show ? 'Hide password' : 'Show password'} className="absolute right-1.5 top-1.5 flex size-8 items-center justify-center rounded-lg text-ink-3 hover:bg-surface-2 hover:text-ink">
                 {show ? <EyeSlash className="size-5" /> : <Eye className="size-5" />}
               </button>
